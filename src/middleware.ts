@@ -45,8 +45,8 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Allow login page for unauthenticated users
-  if (pathname === '/login') {
+  // Allow login and signup pages for unauthenticated users
+  if (pathname === '/login' || pathname === '/signup') {
     if (user) {
       const profile = await getProfile(user.id);
       const redirectUrl = profile?.role === 'admin' ? '/admin' : '/driver';

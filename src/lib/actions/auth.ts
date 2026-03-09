@@ -32,6 +32,73 @@ export async function login(formData: FormData) {
   redirect('/');
 }
 
+const signupSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  email: z.email(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  accessCode: z.string().min(1, 'Access code is required'),
+});
+
+export async function signup(formData: FormData) {
+  const parsed = signupSchema.safeParse({
+    fullName: formData.get('fullName'),
+    email: formData.get('email'),
+    password: formData.get('password'),
+    accessCode: formData.get('accessCode'),
+  });
+
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message ?? 'Invalid input.';
+    return { error: firstError };
+  }
+
+  const { fullName, email, password, accessCode } = parsed.data;
+
+  // Validate access code server-side
+  if (accessCode !== process.env.DRIVER_ACCESS_CODE) {
+    return { error: 'Invalid access code.' };
+  }
+
+  // Use service role client to create user (bypasses email confirmation)
+  const { createServiceClient } = await import('@/lib/supabase/server');
+  const serviceClient = await createServiceClient();
+
+  const { data: authData, error: createError } = await serviceClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName, role: 'driver' },
+  });
+
+  if (createError) {
+    if (createError.message?.includes('already been registered')) {
+      return { error: 'An account with this email already exists.' };
+    }
+    return { error: 'Failed to create account. Please try again.' };
+  }
+
+  // Create profile row
+  await serviceClient.from('profiles').insert({
+    id: authData.user.id,
+    full_name: fullName,
+    role: 'driver',
+    is_active: true,
+  });
+
+  // Sign in the new user
+  const supabase = await createClient();
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError) {
+    return { error: 'Account created but sign-in failed. Please go to the login page.' };
+  }
+
+  redirect('/');
+}
+
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();

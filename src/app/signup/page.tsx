@@ -1,17 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { login } from '@/lib/actions/auth';
+import { signup } from '@/lib/actions/auth';
 import { Truck } from 'lucide-react';
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError(null);
-    const result = await login(formData);
+    const result = await signup(formData);
     if (result?.error) {
       setError(result.error);
       setLoading(false);
@@ -26,7 +26,7 @@ export default function LoginPage() {
             <Truck className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Grain Haul Tracker</h1>
-          <p className="mt-1 text-sm text-gray-500">Sign in to your account</p>
+          <p className="mt-1 text-sm text-gray-500">Create your driver account</p>
         </div>
 
         <form action={handleSubmit} className="space-y-4">
@@ -35,6 +35,20 @@ export default function LoginPage() {
               {error}
             </div>
           )}
+
+          <div>
+            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+              Full Name
+            </label>
+            <input
+              id="fullName"
+              name="fullName"
+              type="text"
+              required
+              autoComplete="name"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-3 text-gray-900 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            />
+          </div>
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -59,7 +73,21 @@ export default function LoginPage() {
               name="password"
               type="password"
               required
-              autoComplete="current-password"
+              autoComplete="new-password"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-3 text-gray-900 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="accessCode" className="block text-sm font-medium text-gray-700">
+              Access Code
+            </label>
+            <input
+              id="accessCode"
+              name="accessCode"
+              type="text"
+              required
+              placeholder="Ask your farm admin for this code"
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-3 text-gray-900 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
             />
           </div>
@@ -69,14 +97,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-lg bg-green-600 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
 
         <p className="mt-4 text-center text-sm text-gray-500">
-          Don&apos;t have an account?{' '}
-          <a href="/signup" className="font-medium text-green-600 hover:text-green-500">
-            Sign up
+          Already have an account?{' '}
+          <a href="/login" className="font-medium text-green-600 hover:text-green-500">
+            Sign in
           </a>
         </p>
       </div>
