@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Prevent tap highlight on mobile for activity buttons */
+.activity-btn {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
