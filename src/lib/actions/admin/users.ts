@@ -72,7 +72,9 @@ export async function toggleUserActive(userId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const { data: profile } = await supabase
+  const serviceClient = await createServiceClient();
+
+  const { data: profile } = await serviceClient
     .from('profiles')
     .select('role')
     .eq('id', user.id)
@@ -80,7 +82,7 @@ export async function toggleUserActive(userId: string) {
 
   if (profile?.role !== 'admin') return { error: 'Not authorized' };
 
-  const { data: target } = await supabase
+  const { data: target } = await serviceClient
     .from('profiles')
     .select('is_active')
     .eq('id', userId)
@@ -88,7 +90,7 @@ export async function toggleUserActive(userId: string) {
 
   if (!target) return { error: 'User not found' };
 
-  await supabase
+  await serviceClient
     .from('profiles')
     .update({ is_active: !target.is_active })
     .eq('id', userId);
