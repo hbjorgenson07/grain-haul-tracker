@@ -34,3 +34,13 @@ export async function createServiceClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }
+
+export async function getProfileByUserId(userId: string) {
+  const supabase = await createServiceClient();
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  return data;
+}

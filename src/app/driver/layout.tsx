@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getProfileByUserId } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { DriverNav } from '@/components/layout/DriverNav';
 
@@ -12,11 +12,7 @@ export default async function DriverLayout({
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  const profile = await getProfileByUserId(user.id);
 
   if (!profile) redirect('/login');
 
