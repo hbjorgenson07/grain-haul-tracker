@@ -67,6 +67,74 @@ export async function createUser(formData: FormData) {
   return { success: true };
 }
 
+const updateUserSchema = z.object({
+  fullName: z.string().min(1),
+  phone: z.string().optional(),
+});
+
+export async function updateUser(userId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const serviceClient = await createServiceClient();
+
+  const { data: profile } = await serviceClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin') return { error: 'Not authorized' };
+
+  const parsed = updateUserSchema.safeParse({
+    fullName: formData.get('fullName'),
+    phone: formData.get('phone') || undefined,
+  });
+
+  if (!parsed.success) {
+    return { error: 'Invalid input. Check all fields.' };
+  }
+
+  const { error: updateError } = await serviceClient
+    .from('profiles')
+    .update({
+      full_name: parsed.data.fullName,
+      phone: parsed.data.phone ?? null,
+    })
+    .eq('id', userId);
+
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath('/admin/drivers');
+  return { success: true };
+}
+
+export async function deleteUser(userId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const serviceClient = await createServiceClient();
+
+  const { data: profile } = await serviceClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin') return { error: 'Not authorized' };
+
+  // Prevent admin from deleting themselves
+  if (userId === user.id) return { error: 'Cannot delete yourself' };
+
+  const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
+  if (deleteError) return { error: deleteError.message };
+
+  revalidatePath('/admin/drivers');
+  return { success: true };
+}
+
 export async function toggleUserActive(userId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
