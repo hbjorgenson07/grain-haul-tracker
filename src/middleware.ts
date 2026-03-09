@@ -1,5 +1,19 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
+
+async function getProfile(userId: string) {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { data } = await supabaseAdmin
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return data;
+}
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -34,13 +48,7 @@ export async function middleware(request: NextRequest) {
   // Allow login page for unauthenticated users
   if (pathname === '/login') {
     if (user) {
-      // Logged in users get redirected to their role-appropriate page
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
+      const profile = await getProfile(user.id);
       const redirectUrl = profile?.role === 'admin' ? '/admin' : '/driver';
       return NextResponse.redirect(new URL(redirectUrl, request.url));
     }
@@ -52,12 +60,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Get user profile for role checking
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+  const profile = await getProfile(user.id);
 
   // Redirect root to role-appropriate page
   if (pathname === '/') {
