@@ -77,13 +77,8 @@ export async function signup(formData: FormData) {
     return { error: 'Failed to create account. Please try again.' };
   }
 
-  // Create profile row
-  await serviceClient.from('profiles').insert({
-    id: authData.user.id,
-    full_name: fullName,
-    role: 'driver',
-    is_active: true,
-  });
+  // Profile row is auto-created by the on_auth_user_created database trigger
+  // using the full_name and role from user_metadata above.
 
   // Sign in the new user
   const supabase = await createClient();

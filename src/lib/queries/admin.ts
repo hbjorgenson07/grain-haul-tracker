@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 export async function getAllDrivers() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('profiles')
     .select('*')
@@ -12,7 +12,7 @@ export async function getAllDrivers() {
 }
 
 export async function getAllProfiles() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('profiles')
     .select('*')
