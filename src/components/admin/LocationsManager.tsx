@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createLocation, toggleLocationActive, importFieldsFromCsv, deleteLocations } from '@/lib/actions/admin/locations';
+import { createLocation, updateLocation, toggleLocationActive, importFieldsFromCsv, deleteLocations } from '@/lib/actions/admin/locations';
 import { LOCATION_TYPES } from '@/lib/constants';
 import type { Location } from '@/lib/types/database';
-import { Plus, X, Check, Ban, Upload, Trash2 } from 'lucide-react';
+import { Plus, X, Check, Ban, Upload, Trash2, Pencil } from 'lucide-react';
 
 export function LocationsManager({ locations }: { locations: Location[] }) {
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
@@ -23,6 +24,19 @@ export function LocationsManager({ locations }: { locations: Location[] }) {
       setError(result.error);
     } else {
       setShowForm(false);
+      router.refresh();
+    }
+    setLoading(false);
+  }
+
+  async function handleUpdate(id: string, formData: FormData) {
+    setLoading(true);
+    setError(null);
+    const result = await updateLocation(id, formData);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      setEditingId(null);
       router.refresh();
     }
     setLoading(false);
@@ -67,7 +81,7 @@ export function LocationsManager({ locations }: { locations: Location[] }) {
     }
   }
 
-  async function handleDelete() {
+  async function handleBulkDelete() {
     if (selected.size === 0) return;
     if (!confirm(`Delete ${selected.size} location(s)? This cannot be undone.`)) return;
     setLoading(true);
@@ -80,6 +94,27 @@ export function LocationsManager({ locations }: { locations: Location[] }) {
         setError(`Deleted ${result.deleted}, but ${result.skipped} location(s) are in use by activity logs and cannot be deleted.`);
       }
       setSelected(new Set());
+      router.refresh();
+    }
+    setLoading(false);
+  }
+
+  async function handleDeleteSingle(id: string, name: string) {
+    if (!confirm(`Delete location "${name}"? This cannot be undone.`)) return;
+    setLoading(true);
+    setError(null);
+    const result = await deleteLocations([id]);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      if (result && 'skipped' in result && result.skipped && result.skipped > 0) {
+        setError(`"${name}" is in use by activity logs and cannot be deleted.`);
+      }
+      setSelected(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       router.refresh();
     }
     setLoading(false);
@@ -98,7 +133,7 @@ export function LocationsManager({ locations }: { locations: Location[] }) {
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-gray-500">{locations.length} location(s)</p>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => { setShowForm(!showForm); setEditingId(null); setError(null); }}
           className="flex items-center gap-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
         >
           {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -106,12 +141,13 @@ export function LocationsManager({ locations }: { locations: Location[] }) {
         </button>
       </div>
 
+      {error && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>
+      )}
+
       {showForm && (
         <div className="mb-6 rounded-lg bg-white p-6 shadow-sm">
           <h3 className="mb-4 font-semibold text-gray-900">New Location</h3>
-          {error && (
-            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>
-          )}
           <form action={handleCreate} className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700">Name *</label>
@@ -179,7 +215,7 @@ export function LocationsManager({ locations }: { locations: Location[] }) {
         <div className="mb-3 flex items-center justify-between rounded-lg bg-red-50 px-4 py-2">
           <span className="text-sm text-red-700">{selected.size} selected</span>
           <button
-            onClick={handleDelete}
+            onClick={handleBulkDelete}
             disabled={loading}
             className="flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
           >
@@ -210,34 +246,98 @@ export function LocationsManager({ locations }: { locations: Location[] }) {
           <tbody>
             {locations.map((l) => (
               <tr key={l.id} className={`border-b last:border-0 hover:bg-gray-50 ${selected.has(l.id) ? 'bg-red-50' : ''}`}>
-                <td className="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(l.id)}
-                    onChange={() => toggleSelect(l.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                  />
-                </td>
-                <td className="px-4 py-3 font-medium text-gray-900">{l.name}</td>
-                <td className="px-4 py-3 text-gray-500">{typeLabels[l.type] || l.type}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      l.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    {l.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => handleToggle(l.id)}
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                    title={l.is_active ? 'Deactivate' : 'Activate'}
-                  >
-                    {l.is_active ? <Ban className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-                  </button>
-                </td>
+                {editingId === l.id ? (
+                  <td colSpan={5} className="px-4 py-3">
+                    <form
+                      action={(formData) => handleUpdate(l.id, formData)}
+                      className="flex items-end gap-3"
+                    >
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-500">Name *</label>
+                        <input
+                          name="name"
+                          required
+                          defaultValue={l.name}
+                          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-500">Type *</label>
+                        <select
+                          name="type"
+                          required
+                          defaultValue={l.type}
+                          className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                        >
+                          {LOCATION_TYPES.map((t) => (
+                            <option key={t} value={t}>{typeLabels[t]}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingId(null); setError(null); }}
+                        className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  </td>
+                ) : (
+                  <>
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(l.id)}
+                        onChange={() => toggleSelect(l.id)}
+                        className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{l.name}</td>
+                    <td className="px-4 py-3 text-gray-500">{typeLabels[l.type] || l.type}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          l.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {l.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => { setEditingId(l.id); setShowForm(false); setError(null); }}
+                          className="text-gray-400 hover:text-blue-600"
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleToggle(l.id)}
+                          className="text-gray-400 hover:text-gray-700"
+                          title={l.is_active ? 'Deactivate' : 'Activate'}
+                        >
+                          {l.is_active ? <Ban className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSingle(l.id, l.name)}
+                          className="text-gray-400 hover:text-red-600"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>

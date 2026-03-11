@@ -52,6 +52,29 @@ export async function updateCrop(id: string, formData: FormData) {
   return { success: true };
 }
 
+export async function deleteCrop(id: string) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return { error: auth.error };
+
+  const serviceClient = await createServiceClient();
+
+  // Check if crop is referenced by any sessions
+  const { data: referenced } = await serviceClient
+    .from('sessions')
+    .select('id')
+    .eq('crop_type_id', id)
+    .limit(1);
+
+  if (referenced && referenced.length > 0) {
+    return { error: 'This crop type is in use by one or more sessions and cannot be deleted.' };
+  }
+
+  const { error } = await serviceClient.from('crop_types').delete().eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/admin/crops');
+  return { success: true };
+}
+
 export async function toggleCropActive(id: string) {
   const auth = await requireAdmin();
   if ('error' in auth) return { error: auth.error };
