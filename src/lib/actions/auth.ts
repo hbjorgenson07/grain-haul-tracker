@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { z } from 'zod/v4';
 
@@ -20,13 +20,35 @@ export async function login(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: authData, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   });
 
   if (error) {
     return { error: 'Invalid email or password.' };
+  }
+
+  // Ensure profile exists (may be missing if user was created before the DB trigger)
+  if (authData.user) {
+    const serviceClient = await createServiceClient();
+    const { data: profile } = await serviceClient
+      .from('profiles')
+      .select('id')
+      .eq('id', authData.user.id)
+      .maybeSingle();
+
+    if (!profile) {
+      const { error: insertError } = await serviceClient.from('profiles').insert({
+        id: authData.user.id,
+        full_name: authData.user.user_metadata?.full_name ?? authData.user.email ?? 'Unknown',
+        role: authData.user.user_metadata?.role ?? 'driver',
+      });
+      if (insertError) {
+        console.error('[login] profile insert failed:', insertError.message);
+        return { error: 'Account setup failed: ' + insertError.message };
+      }
+    }
   }
 
   redirect('/');
@@ -60,7 +82,6 @@ export async function signup(formData: FormData) {
   }
 
   // Use service role client to create user (bypasses email confirmation)
-  const { createServiceClient } = await import('@/lib/supabase/server');
   const serviceClient = await createServiceClient();
 
   const { data: authData, error: createError } = await serviceClient.auth.admin.createUser({

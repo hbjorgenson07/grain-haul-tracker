@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { startOfDay, endOfDay } from 'date-fns';
 
 export async function getTodayStats() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const today = new Date();
   const dayStart = startOfDay(today).toISOString();
   const dayEnd = endOfDay(today).toISOString();
@@ -39,7 +39,7 @@ export async function getTodayStats() {
 }
 
 export async function getActiveSessionsWithDrivers() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('sessions')
     .select('*, driver:profiles(full_name), truck:trucks(name)')
@@ -70,7 +70,7 @@ export async function getDailySummary(date: Date, filters?: {
   driverId?: string;
   truckId?: string;
 }) {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const dayStart = startOfDay(date).toISOString();
   const dayEnd = endOfDay(date).toISOString();
 

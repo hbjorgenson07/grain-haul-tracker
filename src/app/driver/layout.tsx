@@ -14,7 +14,13 @@ export default async function DriverLayout({
 
   const profile = await getProfileByUserId(user.id);
 
-  if (!profile) redirect('/login');
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
+        <p className="text-gray-600">Your profile has not been set up yet. Please contact an administrator.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">

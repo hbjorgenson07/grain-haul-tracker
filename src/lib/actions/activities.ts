@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod/v4';
 import { ACTIVITY_TYPES } from '@/lib/constants';
@@ -10,6 +10,9 @@ const logActivitySchema = z.object({
   activityType: z.enum(ACTIVITY_TYPES),
   locationId: z.uuid().optional(),
   notes: z.string().optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  gpsAccuracy: z.number().min(0).optional(),
 });
 
 export async function logActivity(data: {
@@ -17,6 +20,9 @@ export async function logActivity(data: {
   activityType: string;
   locationId?: string;
   notes?: string;
+  latitude?: number;
+  longitude?: number;
+  gpsAccuracy?: number;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -27,8 +33,10 @@ export async function logActivity(data: {
     return { error: 'Invalid activity data.' };
   }
 
+  const serviceClient = await createServiceClient();
+
   // Get session to verify ownership and get truck_id
-  const { data: session } = await supabase
+  const { data: session } = await serviceClient
     .from('sessions')
     .select('id, driver_id, truck_id')
     .eq('id', parsed.data.sessionId)
@@ -38,12 +46,15 @@ export async function logActivity(data: {
     return { error: 'Session not found.' };
   }
 
-  const { error } = await supabase.from('activity_logs').insert({
+  const { error } = await serviceClient.from('activity_logs').insert({
     session_id: parsed.data.sessionId,
     driver_id: user.id,
     truck_id: session.truck_id,
     activity_type: parsed.data.activityType,
     location_id: parsed.data.locationId || null,
+    latitude: parsed.data.latitude ?? null,
+    longitude: parsed.data.longitude ?? null,
+    gps_accuracy: parsed.data.gpsAccuracy ?? null,
     notes: parsed.data.notes || null,
   });
 

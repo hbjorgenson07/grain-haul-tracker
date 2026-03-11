@@ -3,7 +3,14 @@ import { getSessionById } from '@/lib/queries/sessions';
 import { getActivitiesBySession } from '@/lib/queries/activities';
 import { formatDate, formatTimestamp, formatDurationMinutes } from '@/lib/utils';
 import { differenceInMinutes } from 'date-fns';
-import { ACTIVITY_LABELS, type ActivityType } from '@/lib/constants';
+import {
+  ACTIVITY_LABELS,
+  SOURCE_TYPE_LABELS,
+  DESTINATION_TYPE_LABELS,
+  type ActivityType,
+  type SourceType,
+  type DestinationType,
+} from '@/lib/constants';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
@@ -39,6 +46,8 @@ export default async function SessionDetailPage({
         <div className="mt-2 space-y-1 text-sm text-gray-600">
           <p>Truck: {(session.truck as { name: string })?.name}</p>
           {session.crop_type && <p>Crop: {(session.crop_type as { name: string })?.name}</p>}
+          {session.source_type && <p>Source: {SOURCE_TYPE_LABELS[session.source_type as SourceType]}</p>}
+          {session.destination_type && <p>Destination: {DESTINATION_TYPE_LABELS[session.destination_type as DestinationType]}</p>}
           <p>Duration: {duration !== null ? formatDurationMinutes(duration) : 'In progress'}</p>
           <p>Trips: {tripCount}</p>
         </div>

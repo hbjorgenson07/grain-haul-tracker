@@ -49,7 +49,8 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/login' || pathname === '/signup') {
     if (user) {
       const profile = await getProfile(user.id);
-      const redirectUrl = profile?.role === 'admin' ? '/admin' : '/driver';
+      if (!profile) return supabaseResponse;
+      const redirectUrl = profile.role === 'admin' ? '/admin' : '/driver';
       return NextResponse.redirect(new URL(redirectUrl, request.url));
     }
     return supabaseResponse;
@@ -62,14 +63,18 @@ export async function middleware(request: NextRequest) {
 
   const profile = await getProfile(user.id);
 
+  if (!profile) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   // Redirect root to role-appropriate page
   if (pathname === '/') {
-    const redirectUrl = profile?.role === 'admin' ? '/admin' : '/driver';
+    const redirectUrl = profile.role === 'admin' ? '/admin' : '/driver';
     return NextResponse.redirect(new URL(redirectUrl, request.url));
   }
 
   // Block drivers from accessing admin routes
-  if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
+  if (pathname.startsWith('/admin') && profile.role !== 'admin') {
     return NextResponse.redirect(new URL('/driver', request.url));
   }
 

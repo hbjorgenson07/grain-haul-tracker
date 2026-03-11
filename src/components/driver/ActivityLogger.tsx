@@ -3,16 +3,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { logActivity } from '@/lib/actions/activities';
-import { endSession } from '@/lib/actions/sessions';
+import { endSession, updateSessionDestination } from '@/lib/actions/sessions';
 import {
   ACTIVITY_LABELS,
   ACTIVITY_COLORS,
   NEXT_ACTIVITY,
   LOCATION_REQUIRED_ACTIVITIES,
+  SOURCE_TYPE_LABELS,
+  DESTINATION_TYPES,
+  DESTINATION_TYPE_LABELS,
   type ActivityType,
+  type SourceType,
+  type DestinationType,
 } from '@/lib/constants';
 import { formatElapsedTime, formatTimestamp } from '@/lib/utils';
-import { MapPin, StopCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { useGps } from '@/hooks/useGps';
+import { MapPin, StopCircle, ChevronDown, ChevronUp, Pencil, Navigation } from 'lucide-react';
 import type { Location } from '@/lib/types/database';
 
 interface ActivityLogEntry {
@@ -26,7 +32,9 @@ interface SessionData {
   id: string;
   started_at: string;
   truck: { name: string };
-  crop_type: { name: string } | null;
+  crop_type: { name: string };
+  source_type: 'field' | 'storage';
+  destination_type: 'bins' | 'elevator' | 'plant';
 }
 
 export function ActivityLogger({
@@ -44,6 +52,25 @@ export function ActivityLogger({
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [showHistory, setShowHistory] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [editingDestination, setEditingDestination] = useState(false);
+  const { gpsStatus, getCurrentPosition } = useGps();
+
+  const isStorage = session.source_type === 'storage';
+  const allowedDestinations = DESTINATION_TYPES.filter(
+    dt => !(isStorage && dt === 'bins')
+  );
+
+  const handleUpdateDestination = useCallback(async (newDest: DestinationType) => {
+    setLoading(true);
+    const result = await updateSessionDestination(session.id, newDest);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      setEditingDestination(false);
+      router.refresh();
+    }
+    setLoading(false);
+  }, [session.id, router]);
 
   // Determine current state from last activity
   const lastActivity = activities[activities.length - 1];
@@ -86,10 +113,16 @@ export function ActivityLogger({
     // Haptic feedback
     if (navigator.vibrate) navigator.vibrate(50);
 
+    // Capture GPS coordinates
+    const coords = await getCurrentPosition();
+
     const result = await logActivity({
       sessionId: session.id,
       activityType: nextActivity,
       locationId: needsLocation ? selectedLocation : undefined,
+      latitude: coords?.latitude,
+      longitude: coords?.longitude,
+      gpsAccuracy: coords?.accuracy,
     });
 
     if (result?.error) {
@@ -100,12 +133,13 @@ export function ActivityLogger({
       setLoading(false);
       router.refresh();
     }
-  }, [nextActivity, needsLocation, selectedLocation, session.id, router]);
+  }, [nextActivity, needsLocation, selectedLocation, session.id, router, getCurrentPosition]);
 
   const handleEndShift = useCallback(async () => {
     if (!confirm('Are you sure you want to end your shift?')) return;
     setLoading(true);
-    const result = await endSession(session.id);
+    const coords = await getCurrentPosition();
+    const result = await endSession(session.id, coords ? { latitude: coords.latitude, longitude: coords.longitude, accuracy: coords.accuracy } : null);
     if (result?.error) {
       setError(result.error);
       setLoading(false);
@@ -113,7 +147,7 @@ export function ActivityLogger({
       router.push('/driver');
       router.refresh();
     }
-  }, [session.id, router]);
+  }, [session.id, router, getCurrentPosition]);
 
   const statusText = ACTIVITY_LABELS[lastType] || 'In Progress';
   const buttonColor = nextActivity ? ACTIVITY_COLORS[nextActivity] : 'bg-gray-400';
@@ -124,7 +158,12 @@ export function ActivityLogger({
       {/* Status bar */}
       <div className="mb-4 rounded-lg bg-white p-3 shadow-sm">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-gray-900">{session.truck.name}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-medium text-gray-900">{session.truck.name}</span>
+            <span className={`inline-block h-2 w-2 rounded-full ${
+              gpsStatus === 'granted' ? 'bg-green-500' : gpsStatus === 'denied' ? 'bg-red-500' : 'bg-yellow-500'
+            }`} title={`GPS: ${gpsStatus}`} />
+          </div>
           <span className="font-mono text-gray-600">{formatElapsedTime(elapsed)}</span>
         </div>
         <div className="mt-1 flex items-center justify-between text-sm">
@@ -135,8 +174,37 @@ export function ActivityLogger({
             Trip #{tripCount + (lastType === 'loaded_leaving' || lastType === 'arrived_at_destination' || lastType === 'unloading' || lastType === 'finished_unloading' ? 0 : 1)}
           </span>
         </div>
-        {session.crop_type && (
-          <div className="mt-1 text-xs text-gray-400">{session.crop_type.name}</div>
+        <div className="mt-1 flex items-center gap-1 text-xs text-gray-400">
+          <span>
+            {session.crop_type.name} &middot; {SOURCE_TYPE_LABELS[session.source_type as SourceType]} &rarr; {DESTINATION_TYPE_LABELS[session.destination_type as DestinationType]}
+          </span>
+          <button
+            type="button"
+            onClick={() => setEditingDestination(!editingDestination)}
+            className="ml-1 rounded p-0.5 text-gray-400 hover:text-gray-600"
+            title="Change destination"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        </div>
+        {editingDestination && (
+          <div className="mt-2 flex gap-2">
+            {allowedDestinations.map((dt) => (
+              <button
+                key={dt}
+                type="button"
+                disabled={loading || dt === session.destination_type}
+                onClick={() => handleUpdateDestination(dt)}
+                className={`flex-1 rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
+                  dt === session.destination_type
+                    ? 'border-green-600 bg-green-50 text-green-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                } disabled:opacity-50`}
+              >
+                {DESTINATION_TYPE_LABELS[dt]}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 

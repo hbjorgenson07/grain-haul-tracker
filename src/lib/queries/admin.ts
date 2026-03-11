@@ -23,7 +23,7 @@ export async function getAllProfiles() {
 }
 
 export async function getAllTrucks() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('trucks')
     .select('*')
@@ -33,7 +33,7 @@ export async function getAllTrucks() {
 }
 
 export async function getActiveTrucks() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('trucks')
     .select('*')
@@ -44,7 +44,7 @@ export async function getActiveTrucks() {
 }
 
 export async function getAllLocations() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('locations')
     .select('*')
@@ -55,7 +55,7 @@ export async function getAllLocations() {
 }
 
 export async function getActiveLocations() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('locations')
     .select('*')
@@ -67,7 +67,7 @@ export async function getActiveLocations() {
 }
 
 export async function getAllCropTypes() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('crop_types')
     .select('*')
@@ -77,7 +77,7 @@ export async function getAllCropTypes() {
 }
 
 export async function getActiveCropTypes() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('crop_types')
     .select('*')

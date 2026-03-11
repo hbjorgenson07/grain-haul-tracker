@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export async function getActiveSession(userId: string) {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('sessions')
     .select('*, truck:trucks(*), crop_type:crop_types(*)')
@@ -13,7 +13,7 @@ export async function getActiveSession(userId: string) {
 }
 
 export async function getSessionHistory(userId: string, limit = 20) {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('sessions')
     .select('*, truck:trucks(*), crop_type:crop_types(*)')
@@ -26,7 +26,7 @@ export async function getSessionHistory(userId: string, limit = 20) {
 }
 
 export async function getSessionById(sessionId: string) {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('sessions')
     .select('*, truck:trucks(*), crop_type:crop_types(*), driver:profiles(*)')
@@ -44,7 +44,7 @@ export async function getAllSessions(filters?: {
   dateTo?: string;
   limit?: number;
 }) {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   let query = supabase
     .from('sessions')
     .select('*, truck:trucks(*), crop_type:crop_types(*), driver:profiles(*)')

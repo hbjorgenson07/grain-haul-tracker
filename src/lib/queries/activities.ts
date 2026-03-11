@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export async function getActivitiesBySession(sessionId: string) {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('activity_logs')
     .select('*, location:locations(*)')
@@ -12,7 +12,7 @@ export async function getActivitiesBySession(sessionId: string) {
 }
 
 export async function getLatestActivity(sessionId: string) {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { data } = await supabase
     .from('activity_logs')
     .select('*, location:locations(*)')
@@ -32,7 +32,7 @@ export async function getRecentActivities(limit = 50, filters?: {
   dateFrom?: string;
   dateTo?: string;
 }) {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   let query = supabase
     .from('activity_logs')
     .select('*, location:locations(*), driver:profiles(full_name), truck:trucks(name)')

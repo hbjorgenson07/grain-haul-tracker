@@ -46,12 +46,13 @@ export default async function ActivityPage({
               <th className="px-4 py-3 text-left font-medium text-gray-600">Truck</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Activity</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Location</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">GPS</th>
             </tr>
           </thead>
           <tbody>
             {activities.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                   No activity found.
                 </td>
               </tr>
@@ -72,6 +73,21 @@ export default async function ActivityPage({
                   </td>
                   <td className="px-4 py-3 text-gray-500">
                     {a.location ? (a.location as { name: string }).name : '—'}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-gray-500">
+                    {a.latitude != null && a.longitude != null ? (
+                      <a
+                        href={`https://www.google.com/maps?q=${a.latitude},${a.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                        title={a.gps_accuracy != null ? `Accuracy: ${Math.round(a.gps_accuracy)}m` : undefined}
+                      >
+                        {Number(a.latitude).toFixed(4)}, {Number(a.longitude).toFixed(4)}
+                      </a>
+                    ) : (
+                      '—'
+                    )}
                   </td>
                 </tr>
               ))

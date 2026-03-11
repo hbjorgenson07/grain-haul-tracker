@@ -40,11 +40,26 @@ export const LOCATION_TYPES = [
   'field',
   'elevator',
   'bin_site',
-  'processing',
+  'plant',
   'other',
 ] as const;
 
 export type LocationType = (typeof LOCATION_TYPES)[number];
+
+export const SOURCE_TYPES = ['field', 'storage'] as const;
+export type SourceType = (typeof SOURCE_TYPES)[number];
+export const SOURCE_TYPE_LABELS: Record<SourceType, string> = {
+  field: 'Harvest (Field)',
+  storage: 'From Storage (Bins)',
+};
+
+export const DESTINATION_TYPES = ['bins', 'elevator', 'plant'] as const;
+export type DestinationType = (typeof DESTINATION_TYPES)[number];
+export const DESTINATION_TYPE_LABELS: Record<DestinationType, string> = {
+  bins: 'Main Shop Bins',
+  elevator: 'Elevator',
+  plant: 'Plant',
+};
 
 export const ROLES = ['admin', 'driver'] as const;
 export type Role = (typeof ROLES)[number];

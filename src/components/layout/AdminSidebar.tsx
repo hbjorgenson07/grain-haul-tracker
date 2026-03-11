@@ -10,6 +10,7 @@ import {
   Users,
   Truck,
   MapPin,
+  Navigation,
   Wheat,
   LogOut,
   Menu,
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/admin/reports/trends', label: 'Trends', icon: FileText },
   { href: '/admin/drivers', label: 'Drivers', icon: Users },
   { href: '/admin/trucks', label: 'Trucks', icon: Truck },
+  { href: '/admin/gps', label: 'GPS Data', icon: Navigation },
   { href: '/admin/locations', label: 'Locations', icon: MapPin },
   { href: '/admin/crops', label: 'Crop Types', icon: Wheat },
 ];

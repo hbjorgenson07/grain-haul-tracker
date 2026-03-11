@@ -19,7 +19,7 @@ export interface Truck {
 export interface Location {
   id: string;
   name: string;
-  type: 'field' | 'elevator' | 'bin_site' | 'processing' | 'other';
+  type: 'field' | 'elevator' | 'bin_site' | 'plant' | 'other';
   is_active: boolean;
   created_at: string;
 }
@@ -34,7 +34,9 @@ export interface Session {
   id: string;
   driver_id: string;
   truck_id: string;
-  crop_type_id: string | null;
+  crop_type_id: string;
+  source_type: 'field' | 'storage';
+  destination_type: 'bins' | 'elevator' | 'plant';
   started_at: string;
   ended_at: string | null;
   notes: string | null;
@@ -49,6 +51,9 @@ export interface ActivityLog {
   activity_type: string;
   location_id: string | null;
   timestamp: string;
+  latitude: number | null;
+  longitude: number | null;
+  gps_accuracy: number | null;
   notes: string | null;
   created_at: string;
 }
@@ -56,7 +61,7 @@ export interface ActivityLog {
 // Joined types for queries
 export interface SessionWithDetails extends Session {
   truck: Truck;
-  crop_type: CropType | null;
+  crop_type: CropType;
   driver: Profile;
   activity_logs?: ActivityLog[];
 }
