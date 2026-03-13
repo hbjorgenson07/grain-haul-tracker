@@ -1,11 +1,17 @@
 import { createServiceClient } from '@/lib/supabase/server';
-import { startOfDay, endOfDay } from 'date-fns';
+import { fromZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { TIMEZONE } from '@/lib/utils';
+
+function getEasternDayBounds(date: Date): { dayStart: string; dayEnd: string } {
+  const dateStr = formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd');
+  const dayStart = fromZonedTime(`${dateStr}T00:00:00`, TIMEZONE).toISOString();
+  const dayEnd = fromZonedTime(`${dateStr}T23:59:59.999`, TIMEZONE).toISOString();
+  return { dayStart, dayEnd };
+}
 
 export async function getTodayStats() {
   const supabase = await createServiceClient();
-  const today = new Date();
-  const dayStart = startOfDay(today).toISOString();
-  const dayEnd = endOfDay(today).toISOString();
+  const { dayStart, dayEnd } = getEasternDayBounds(new Date());
 
   // Active sessions (no ended_at)
   const { count: activeSessions } = await supabase
@@ -71,8 +77,7 @@ export async function getDailySummary(date: Date, filters?: {
   truckId?: string;
 }) {
   const supabase = await createServiceClient();
-  const dayStart = startOfDay(date).toISOString();
-  const dayEnd = endOfDay(date).toISOString();
+  const { dayStart, dayEnd } = getEasternDayBounds(date);
 
   let sessionsQuery = supabase
     .from('sessions')

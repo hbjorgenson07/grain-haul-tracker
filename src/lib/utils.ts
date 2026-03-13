@@ -1,4 +1,7 @@
-import { formatDistanceStrict, format, differenceInMinutes, differenceInSeconds } from 'date-fns';
+import { formatDistanceStrict, differenceInMinutes, differenceInSeconds } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+
+export const TIMEZONE = 'America/New_York';
 
 export function formatDuration(startDate: string | Date, endDate: string | Date): string {
   return formatDistanceStrict(new Date(startDate), new Date(endDate));
@@ -14,15 +17,15 @@ export function formatDurationMinutes(minutes: number | null): string {
 }
 
 export function formatTimestamp(timestamp: string | Date): string {
-  return format(new Date(timestamp), 'h:mm a');
+  return formatInTimeZone(new Date(timestamp), TIMEZONE, 'h:mm a');
 }
 
 export function formatDate(date: string | Date): string {
-  return format(new Date(date), 'MMM d, yyyy');
+  return formatInTimeZone(new Date(date), TIMEZONE, 'MMM d, yyyy');
 }
 
 export function formatDateTime(date: string | Date): string {
-  return format(new Date(date), 'MMM d, yyyy h:mm a');
+  return formatInTimeZone(new Date(date), TIMEZONE, 'MMM d, yyyy h:mm a');
 }
 
 export function getElapsedMinutes(start: string | Date, end?: string | Date): number {

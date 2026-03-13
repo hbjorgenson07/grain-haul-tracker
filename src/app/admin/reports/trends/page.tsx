@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
-import { subDays, startOfDay, endOfDay, format } from 'date-fns';
+import { subDays, startOfDay, endOfDay } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { TIMEZONE } from '@/lib/utils';
 import { TrendsCharts } from '@/components/admin/TrendsCharts';
 
 export default async function TrendsPage() {
@@ -33,13 +35,13 @@ export default async function TrendsPage() {
 
   for (let i = 0; i < days; i++) {
     const d = subDays(new Date(), days - 1 - i);
-    const key = format(d, 'yyyy-MM-dd');
-    dailyStats[key] = { date: format(d, 'MMM d'), trips: 0, sessions: 0, loadEvents: 0, unloadEvents: 0 };
+    const key = formatInTimeZone(d, TIMEZONE, 'yyyy-MM-dd');
+    dailyStats[key] = { date: formatInTimeZone(d, TIMEZONE, 'MMM d'), trips: 0, sessions: 0, loadEvents: 0, unloadEvents: 0 };
   }
 
   const sessionDays = new Set<string>();
   for (const a of activities ?? []) {
-    const day = format(new Date(a.timestamp), 'yyyy-MM-dd');
+    const day = formatInTimeZone(new Date(a.timestamp), TIMEZONE, 'yyyy-MM-dd');
     if (!dailyStats[day]) continue;
 
     if (a.activity_type === 'loaded_leaving') dailyStats[day].trips++;
