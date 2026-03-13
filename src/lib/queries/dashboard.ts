@@ -119,7 +119,7 @@ function countTrips(activities: { activity_type: string }[]): number {
   return activities.filter(a => a.activity_type === 'loaded_leaving').length;
 }
 
-function calculateDurations(activities: { activity_type: string; timestamp: string }[]) {
+export function calculateDurations(activities: { activity_type: string; timestamp: string }[]) {
   let totalLoadingMs = 0;
   let totalUnloadingMs = 0;
   let totalTravelMs = 0;
