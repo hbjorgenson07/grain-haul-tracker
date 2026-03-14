@@ -1,6 +1,6 @@
 import { createClient, getProfileByUserId } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { AdminNavbar } from '@/components/layout/AdminNavbar';
 
 export default async function AdminLayout({
   children,
@@ -17,9 +17,9 @@ export default async function AdminLayout({
   if (!profile || profile.role !== 'admin') redirect('/driver');
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar userName={profile.full_name} />
-      <main className="flex-1 overflow-auto">
+    <div className="min-h-screen bg-gray-50">
+      <AdminNavbar userName={profile.full_name} />
+      <main className="pt-14">
         <div className="p-6 lg:p-8">
           {children}
         </div>

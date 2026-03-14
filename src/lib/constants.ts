@@ -77,6 +77,19 @@ export const NEXT_ACTIVITY: Record<ActivityType, ActivityType | null> = {
   shift_end: null,
 };
 
+// Source-aware workflow: storage routes skip the field step
+export function getNextActivity(
+  current: ActivityType,
+  sourceType: SourceType,
+): ActivityType | null {
+  if (sourceType === 'storage') {
+    if (current === 'shift_start' || current === 'return_trip') {
+      return 'loading';
+    }
+  }
+  return NEXT_ACTIVITY[current];
+}
+
 // Activities that require a location selection
 export const LOCATION_REQUIRED_ACTIVITIES: ActivityType[] = [
   'arrived_at_field',

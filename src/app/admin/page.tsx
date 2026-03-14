@@ -2,7 +2,8 @@ import { getTodayStats, getActiveSessionsWithDrivers } from '@/lib/queries/dashb
 import { getRecentActivities } from '@/lib/queries/activities';
 import { ACTIVITY_LABELS, type ActivityType } from '@/lib/constants';
 import { formatTimestamp } from '@/lib/utils';
-import { Users, Truck, Activity, TrendingUp } from 'lucide-react';
+import { Users, Truck, Activity, TrendingUp, Trash2 } from 'lucide-react';
+import { DeleteDataByDate } from '@/components/admin/DeleteDataByDate';
 
 export default async function AdminDashboard() {
   const stats = await getTodayStats();
@@ -105,6 +106,18 @@ export default async function AdminDashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Data Management */}
+      <div className="mt-6 rounded-lg bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-2">
+          <Trash2 className="h-5 w-5 text-red-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Data Management</h2>
+        </div>
+        <p className="mb-4 text-sm text-gray-500">
+          Delete all sessions and activity logs for a specific date. Use this to clean up test data.
+        </p>
+        <DeleteDataByDate />
       </div>
     </div>
   );

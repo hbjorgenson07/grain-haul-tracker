@@ -7,7 +7,7 @@ import { endSession, updateSessionDestination } from '@/lib/actions/sessions';
 import {
   ACTIVITY_LABELS,
   ACTIVITY_COLORS,
-  NEXT_ACTIVITY,
+  getNextActivity,
   LOCATION_REQUIRED_ACTIVITIES,
   SOURCE_TYPE_LABELS,
   DESTINATION_TYPES,
@@ -18,8 +18,9 @@ import {
 } from '@/lib/constants';
 import { formatElapsedTime, formatTimestamp } from '@/lib/utils';
 import { useGps } from '@/hooks/useGps';
-import { MapPin, StopCircle, ChevronDown, ChevronUp, Pencil, Navigation } from 'lucide-react';
+import { StopCircle, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import type { Location } from '@/lib/types/database';
+import { LocationPicker } from './LocationPicker';
 
 interface ActivityLogEntry {
   id: string;
@@ -75,7 +76,7 @@ export function ActivityLogger({
   // Determine current state from last activity
   const lastActivity = activities[activities.length - 1];
   const lastType = (lastActivity?.activity_type ?? 'shift_start') as ActivityType;
-  const nextActivity = NEXT_ACTIVITY[lastType];
+  const nextActivity = getNextActivity(lastType, session.source_type as SourceType);
 
   // Count trips (number of loaded_leaving events)
   const tripCount = activities.filter(a => a.activity_type === 'loaded_leaving').length;
@@ -214,28 +215,12 @@ export function ActivityLogger({
 
       {/* Location selector (when needed) */}
       {needsLocation && nextActivity && (
-        <div className="mb-4">
-          <label className="mb-2 flex items-center gap-1 text-sm font-medium text-gray-700">
-            <MapPin className="h-4 w-4" />
-            {nextActivity === 'arrived_at_field' ? 'Select Field' : 'Select Destination'}
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {relevantLocations.map((loc) => (
-              <button
-                key={loc.id}
-                type="button"
-                onClick={() => setSelectedLocation(loc.id)}
-                className={`activity-btn rounded-lg border-2 px-3 py-3 text-sm font-medium transition-colors ${
-                  selectedLocation === loc.id
-                    ? 'border-green-600 bg-green-50 text-green-700'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {loc.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <LocationPicker
+          locations={relevantLocations}
+          selectedId={selectedLocation}
+          onSelect={setSelectedLocation}
+          label={nextActivity === 'arrived_at_field' ? 'Select Field' : 'Select Destination'}
+        />
       )}
 
       {/* Main action button */}

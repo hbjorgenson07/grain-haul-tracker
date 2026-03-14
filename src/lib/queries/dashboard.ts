@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { TIMEZONE } from '@/lib/utils';
 
-function getEasternDayBounds(date: Date): { dayStart: string; dayEnd: string } {
+export function getEasternDayBounds(date: Date): { dayStart: string; dayEnd: string } {
   const dateStr = formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd');
   const dayStart = fromZonedTime(`${dateStr}T00:00:00`, TIMEZONE).toISOString();
   const dayEnd = fromZonedTime(`${dateStr}T23:59:59.999`, TIMEZONE).toISOString();
